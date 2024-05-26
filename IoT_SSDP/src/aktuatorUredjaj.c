@@ -60,7 +60,7 @@ int main()
         exit(EXIT_FAILURE);
     }
 
-    mosquitto_subscribe(mosq, NULL, "ftn_powerwall/senzor", 1);
+    mosquitto_subscribe(mosq, NULL, CONTROLLER_TOPIC, 1);
     
     //---------------------
     

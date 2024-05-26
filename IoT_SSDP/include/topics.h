@@ -1,10 +1,9 @@
 #ifndef _TOPICS_H_
 #define _TOPICS_H_
 
-#define PROJECT_TOPIC       "ftn_powerwall/"
-#define SENSOR_TOPIC        "senzor/"
-#define ACTUATOR_TOPIC      "aktuator/"
-#define CONTROLLER_TOPIC    "kontroler/"
+#define SENSOR_TOPIC        "ftn_powerwall/senzor/"
+#define ACTUATOR_TOPIC      "ftn_powerwall/aktuator/"
+#define CONTROLLER_TOPIC    "ftn_powerwall/kontroler/"
 
 #define INA1_TOPIC "ftn_powerwall/senzor/INA1"
 #define INA2_TOPIC "ftn_powerwall/senzor/INA2"

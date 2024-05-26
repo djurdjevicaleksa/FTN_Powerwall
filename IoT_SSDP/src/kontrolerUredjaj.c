@@ -9,6 +9,106 @@
 
 #include "usluzniUredjaj.h"
 #include "topics.h"
+#include "lecaina219.h"
+
+#define READING_BUFFER_SIZE 3 * 60
+
+void on_connect(struct mosquitto* mosq, void* obj, int rc)
+{
+    printf("Connected.\n");
+}
+
+void on_disconnect(struct mosquitto* mosq)
+{
+    printf("Disconnected.\n");
+}
+
+void on_publish(struct mosquitto* mosq, void* obj, int mid)
+{
+    printf("Published.\n");
+}
+
+void on_subscribe(struct mosquitto* mosq, void* obj, int mid, int qos_count, const int* granted_qos)
+{
+    printf("Subscribed.\n");
+}
+
+void on_message(struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg)
+{
+    //obradi ako poruka pocinje sa GET ili SET za onu app iz praktikuma
+    //aka proveri da li su prva 3 karaktera GET ili SET (tako definisano u praktikumu)
+
+    DATAPACK* data = (DATAPACK*)msg->payload;
+
+    char* topic = msg->topic;
+
+    char inaName[4];
+    strncpy(inaName, topic + 21, 4);
+
+    if(strncmp(inaName, "INA1", 4) == 0)
+    {
+        addToBuffer(&ina1Buffer, data);
+    }
+    else if(strncmp(inaName, "INA2", 4) == 0)
+    {
+        addToBuffer(&ina2Buffer, data);
+    }
+    else if(strncmp(inaName, "INA3", 4) == 0)
+    {
+        addToBuffer(&ina3Buffer, data);
+    }
+    else
+    {
+
+    }
+
+}
+
+typedef struct
+{
+    DATAPACK data[READING_BUFFER_SIZE]; //na svaki minut meri
+    int pointer; //pokazuje na 1. prazno mesto
+
+}ReadingBuffer;
+
+ReadingBuffer ina1Buffer;
+ReadingBuffer ina2Buffer;
+ReadingBuffer ina3Buffer;
+
+void initBuffer(ReadingBuffer* buffer)
+{
+    buffer->pointer = 0;
+    memset(&buffer, 0, sizeof(buffer));
+}
+
+void addToBuffer(ReadingBuffer* buffer, DATAPACK* datapack)
+{
+    buffer->data[buffer->pointer] = *datapack;
+    buffer->pointer++;
+
+    if(buffer->pointer == READING_BUFFER_SIZE - 1)
+        buffer->pointer = 0;
+}
+
+enum STATES
+{
+    SPOLJNO_NAPAJANJE = 0, //spoljasnje napajanje
+    PANEL_NAPAJANJE, //akku je pun
+    BATERIJA_NAPAJANJE
+};
+
+/*
+    SPOLJNO NAPAJANJE:
+        akumulator se puni, ova switcha su povezana
+
+    PANEL NAPAJANJE:
+        switch kod panela je raskacen, kod baterije svj, spoljasnje napajanje ugaseno relejem
+
+    BATERIJA NAPAJANJE:
+        kod panela prekid, kod baterije spojeno, relejem ugaseno spoljasnje napajanje 
+
+
+*/
 
 int main() 
 {
@@ -17,11 +117,36 @@ int main()
     char buffer[BUF_SIZE];
     socklen_t client_addr_len = sizeof(client_addr);
 
+    initBuffer(&ina1Buffer);
+    initBuffer(&ina2Buffer);
+    initBuffer(&ina3Buffer);
+
+    bool SW0, SW1, R0, R1;
+    int systemState = SPOLJNO_NAPAJANJE;
+
     setupSockets(&server_addr, &client_addr, &server_fd, &client_fd);
 
     // OVDE IDE INA I MQTT
     
-    
+    mosquitto_lib_init();
+    struct mosquitto* mosq;
+    mosq = mosquitto_new(NULL, true, NULL);
+
+    mosquitto_connect_callback_set(mosq, on_connect);
+    mosquitto_disconnect_callback_set(mosq, on_disconnect);
+    mosquitto_subscribe_callback_set(mosq, on_subscribe);
+    mosquitto_message_callback_set(mosq, on_message);
+    mosquitto_publish_callback_set(mosq, on_publish);
+
+    int crc = mosquitto_connect(mosq, BROKER_ADDR, BROKER_PORT, BROKER_TIMEOUT);
+
+    if(crc != MOSQ_ERR_SUCCESS)
+    {
+        printf("Neuspesno povezivanje na MQTT Broker. Kod greske: %d\n", crc);
+        exit(EXIT_FAILURE);
+    }
+
+    mosquitto_subscribe(mosq, NULL, SENSOR_TOPIC, 1);
     
     
     
@@ -45,6 +170,32 @@ int main()
             printf("Primljen ACK.\n");
             //sleep, kasnije merenje i obrada podataka za slanje
             usleep(3000000);
+
+            switch(systemState)
+            {
+                case SPOLJNO_NAPAJANJE:
+                {
+                    
+                    break;
+                }
+
+                case PANEL_NAPAJANJE:
+                {
+
+                    break;
+                }
+
+                case BATERIJA_NAPAJANJE:
+                {
+
+                    break;
+                }
+
+                default:
+                {
+                    exit(EXIT_FAILURE);
+                }
+            }
 
             //byebye poruka
             //sendto(client_fd, (const char *)ssdp_byebye_msg, strlen(ssdp_byebye_msg), MSG_CONFIRM, (const struct sockaddr *)&server_addr, sizeof(server_addr));
