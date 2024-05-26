@@ -1,0 +1,15 @@
+U okviru ove SSDP implementacije postoje sledece funkcionalnosti:
+
+    -Otkrivanje krajnjih uredjaja od strane centralnog kontrolera
+        -Prima oglasavanja uredjaja
+        -Smesta ih u lokalnu bazu raspolozivih uredjaja
+        -Daje informaciju krajnjim uredjajima da je primio poruku (ACK)
+
+    -Otkrivanje centralnog kontrolera od strane krajnjih uredjaja
+        -Salju poruku centralnom kontroleru
+        -Ocekuju odgovor u unapred definisanom vremenskom intervalu (ACK)
+    
+    -Pracenje statusa mreze na oba kraja:
+        -Centralni kontroler zna kada se krajnji uredjaji diskonektuju, odnosno kada dodje do tajmauta
+        -Krajnji uredjaji znaju kada centralni kontroler nije aktivan na mrezi, odnosno kada dodje do tajmauta
+        
