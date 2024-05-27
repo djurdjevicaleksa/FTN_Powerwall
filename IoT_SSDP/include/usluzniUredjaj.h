@@ -15,18 +15,4 @@
 
 void setupSockets(struct sockaddr_in*, struct sockaddr_in*, int*, int*);
 
-const char *ssdp_alive_msg =
-    "NOTIFY * HTTP/1.1\r\n"
-    "HOST: 55555\r\n"
-    "LOCATION: \r\n"
-    "NTS: ssdp:alive\r\n"
-    "SERVER: \r\n"
-    "USN: Senzori\r\n";
-
-const char *ssdp_byebye_msg =
-    "NOTIFY * HTTP/1.1\r\n"
-    "HOST: 55555\r\n"
-    "NTS: ssdp:byebye\r\n"
-    "USN: Senzori\n";
-
 #endif

@@ -114,8 +114,6 @@ typedef struct
     float power_mW;
     float shuntVoltage_mV;
 
-    int deviceAddress;
-
 }DATAPACK;
 
 /*

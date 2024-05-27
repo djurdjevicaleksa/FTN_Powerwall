@@ -6,8 +6,10 @@
 #include <netdb.h>
 #include <pthread.h>
 #include <mosquitto.h>
+#include <stdbool.h>
 
 #include "usluzniUredjaj.h"
+#include "kontrolerUredjaj.h"
 #include "topics.h"
 #include "lecaina219.h"
 
@@ -38,30 +40,46 @@ void on_message(struct mosquitto* mosq, void* obj, const struct mosquitto_messag
     //obradi ako poruka pocinje sa GET ili SET za onu app iz praktikuma
     //aka proveri da li su prva 3 karaktera GET ili SET (tako definisano u praktikumu)
 
-    DATAPACK* data = (DATAPACK*)msg->payload;
-
-    char* topic = msg->topic;
-
-    char inaName[4];
-    strncpy(inaName, topic + 21, 4);
-
-    if(strncmp(inaName, "INA1", 4) == 0)
+    const char* topic = (const char*)msg->topic;
+    
+    if(strncmp(topic, DATA_TOPIC, 5) == 0)
     {
-        addToBuffer(&ina1Buffer, data);
+        DATAPACK* data = (DATAPACK*)msg->payload;
+
+        char* topic = msg->topic;
+
+        char inaName[4];
+        strncpy(inaName, topic + 5, 4);
+
+        if(strncmp(inaName, "ina1", 4) == 0)
+        {
+            addToBuffer(&ina1Buffer, data);
+        }
+        else if(strncmp(inaName, "ina2", 4) == 0)
+        {
+            addToBuffer(&ina2Buffer, data);
+        }
+        else if(strncmp(inaName, "ina3", 4) == 0)
+        {
+            addToBuffer(&ina3Buffer, data);
+        }
+        else
+        {
+            fprintf(stderr, "Received undefined device signature: %s", inaName);
+        }
     }
-    else if(strncmp(inaName, "INA2", 4) == 0)
+    else if(strncpy(topic, GETS_TOPIC, 5) == 0)
     {
-        addToBuffer(&ina2Buffer, data);
+        //gets komanda
     }
-    else if(strncmp(inaName, "INA3", 4) == 0)
+    else if(strncpy(topic, SETS_TOPIC, 5) == 0)
     {
-        addToBuffer(&ina3Buffer, data);
+
     }
     else
     {
-
+        //bad request
     }
-
 }
 
 typedef struct
@@ -71,9 +89,12 @@ typedef struct
 
 }ReadingBuffer;
 
-ReadingBuffer ina1Buffer;
+//senzor na panelu
+ReadingBuffer ina1Buffer; 
+//senzor na bateriji
 ReadingBuffer ina2Buffer;
-ReadingBuffer ina3Buffer;
+//senzor na izlazu
+ReadingBuffer ina3Buffer; 
 
 void initBuffer(ReadingBuffer* buffer)
 {
@@ -95,6 +116,12 @@ enum STATES
     SPOLJNO_NAPAJANJE = 0, //spoljasnje napajanje
     PANEL_NAPAJANJE, //akku je pun
     BATERIJA_NAPAJANJE
+};
+
+enum SIGNAL
+{
+    LOW = 0,
+    HIGH
 };
 
 /*
@@ -121,7 +148,8 @@ int main()
     initBuffer(&ina2Buffer);
     initBuffer(&ina3Buffer);
 
-    bool SW0, SW1, R0, R1;
+    int optocouplers[6] = {0};
+
     int systemState = SPOLJNO_NAPAJANJE;
 
     setupSockets(&server_addr, &client_addr, &server_fd, &client_fd);
@@ -138,6 +166,22 @@ int main()
     mosquitto_message_callback_set(mosq, on_message);
     mosquitto_publish_callback_set(mosq, on_publish);
 
+    if(mosquitto_subscribe(mosq, NULL, DATA_TOPIC, 1) != MOSQ_ERR_SUCCESS)
+    {
+        fprintf(stderr, "Couldn't subscribe to SENSOR topic.\n");
+    }
+
+    if(mosquitto_subscribe(mosq, NULL, GETS_TOPIC, 1) != MOSQ_ERR_SUCCESS)
+    {
+        fprintf(stderr, "Couldn't subscribe to GETS topic.\n");
+    }
+
+    if(mosquitto_subscribe(mosq, NULL, SETS_TOPIC, 1) != MOSQ_ERR_SUCCESS)
+    {
+        fprintf(stderr, "Couldn't subscribe to SETS topic.\n");
+    }
+
+
     int crc = mosquitto_connect(mosq, BROKER_ADDR, BROKER_PORT, BROKER_TIMEOUT);
 
     if(crc != MOSQ_ERR_SUCCESS)
@@ -146,10 +190,6 @@ int main()
         exit(EXIT_FAILURE);
     }
 
-    mosquitto_subscribe(mosq, NULL, SENSOR_TOPIC, 1);
-    
-    
-    
     //---------------------
     
     while(1)
@@ -175,18 +215,42 @@ int main()
             {
                 case SPOLJNO_NAPAJANJE:
                 {
-                    
+                    optocouplers[0] = HIGH;
+                    optocouplers[1] = HIGH;
+                    optocouplers[2] = LOW;
+                    optocouplers[3] = LOW;
+                    optocouplers[4] = LOW;
+                    optocouplers[5] = HIGH;
+
+                    updateSystemState(optocouplers, mosq);
+
                     break;
                 }
 
                 case PANEL_NAPAJANJE:
                 {
+                    optocouplers[0] = LOW;
+                    optocouplers[1] = LOW;
+                    optocouplers[2] = HIGH;
+                    optocouplers[3] = LOW;
+                    optocouplers[4] = HIGH;
+                    optocouplers[5] = LOW;
+
+                    updateSystemState(optocouplers, mosq);
 
                     break;
                 }
 
                 case BATERIJA_NAPAJANJE:
                 {
+                    optocouplers[0] = LOW;
+                    optocouplers[1] = LOW;
+                    optocouplers[2] = LOW;
+                    optocouplers[3] = HIGH;
+                    optocouplers[4] = HIGH;
+                    optocouplers[5] = LOW;
+
+                    updateSystemState(optocouplers, mosq);
 
                     break;
                 }
@@ -261,4 +325,29 @@ void setupSockets(struct sockaddr_in* server_addr, struct sockaddr_in* client_ad
         perror("Greska prilikom podesavanja opcija soketa.\n");
         exit(EXIT_FAILURE);
     }
+}
+
+bool updateSystemState(int* ocs, struct mosquitto* mosq)
+{
+    bf command;
+
+    command.a = ocs[0];
+    command.b = ocs[1];
+    command.c = ocs[2];
+    command.d = ocs[3];
+    command.e = ocs[4];
+    command.f = ocs[5];
+
+    command.g = ocs[6];
+    command.h = ocs[7];
+
+    char formatted_command = *(char*)((void*)&command);
+
+    if(mosquitto_publish(mosq, NULL, COMM_TOPIC, sizeof(char), (void*)formatted_command, 1, false) != MOSQ_ERR_SUCCESS)
+    {
+        fprintf(stderr, "Can't instruct the actuator to change its state.\n");
+        return false;
+    }
+
+    return true;
 }

@@ -12,4 +12,14 @@ U okviru ove SSDP implementacije postoje sledece funkcionalnosti:
     -Pracenje statusa mreze na oba kraja:
         -Centralni kontroler zna kada se krajnji uredjaji diskonektuju, odnosno kada dodje do tajmauta
         -Krajnji uredjaji znaju kada centralni kontroler nije aktivan na mrezi, odnosno kada dodje do tajmauta
+
+
+
+NOTES:
+
+    Svaki uredjaj bice subbovan na jedan ili vise od sledecih tema:
+        GETS, SETS, COMM, DATA
+
+    Uredjaj ce znati koji je tip poruke na osnovu teme
+
         

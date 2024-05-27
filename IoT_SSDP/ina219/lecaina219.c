@@ -403,8 +403,6 @@ int inaGetData(LecaINA219* ina, int receipt, DATAPACK* datapack)
 {
     int i;
 
-    datapack->deviceAddress = ina->deviceAddress;
-
     if(receipt & 0b1)
     {
         inaReadBusVoltage_V(ina, &datapack->busVoltage_V);

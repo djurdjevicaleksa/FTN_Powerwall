@@ -8,6 +8,7 @@
 #include <mosquitto.h>
 
 #include "usluzniUredjaj.h"
+#include "aktuatorUredjaj.h"
 #include "topics.h"
 #include "lecaina219.h"
 
@@ -52,6 +53,10 @@ int main()
     mosquitto_subscribe_callback_set(mosq, on_subscribe);
     mosquitto_message_callback_set(mosq, on_message);
 
+    mosquitto_subscribe(mosq, NULL, COMM_TOPIC, 1);
+    mosquitto_subscribe(mosq, NULL, GETS_TOPIC, 1);
+    mosquitto_subscribe(mosq, NULL, SETS_TOPIC, 1);
+
     int crc = mosquitto_connect(mosq, BROKER_ADDR, BROKER_PORT, BROKER_TIMEOUT);
 
     if(crc != MOSQ_ERR_SUCCESS)
@@ -60,7 +65,7 @@ int main()
         exit(EXIT_FAILURE);
     }
 
-    mosquitto_subscribe(mosq, NULL, CONTROLLER_TOPIC, 1);
+    
     
     //---------------------
     
