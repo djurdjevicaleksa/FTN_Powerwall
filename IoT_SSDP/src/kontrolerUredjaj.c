@@ -343,7 +343,7 @@ bool updateSystemState(int* ocs, struct mosquitto* mosq)
 
     char formatted_command = *(char*)((void*)&command);
 
-    if(mosquitto_publish(mosq, NULL, COMM_TOPIC, sizeof(char), (void*)formatted_command, 1, false) != MOSQ_ERR_SUCCESS)
+    if(mosquitto_publish(mosq, NULL, COMM_TOPIC, sizeof(char), (void*)&formatted_command, 1, false) != MOSQ_ERR_SUCCESS)
     {
         fprintf(stderr, "Can't instruct the actuator to change its state.\n");
         return false;
