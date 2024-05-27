@@ -1,20 +1,39 @@
 #ifndef _KONTROLER_UREDJAJ_H_
 #define _KONTROLER_UREDJAJ_H_
 
+#define READING_BUFFER_SIZE 3 * 60
+
+#include "lecaina219.h"
+
 typedef struct
 {
-    unsigned a: 1;
-    unsigned b: 1;
-    unsigned c: 1;
-    unsigned d: 1;
-    unsigned e: 1;
-    unsigned f: 1;
+    DATAPACK data[READING_BUFFER_SIZE]; //na svaki minut meri
+    int pointer; //pokazuje na 1. prazno mesto
 
-    unsigned g: 1;
-    unsigned h: 1;
-}bf;
+}ReadingBuffer;
 
+//senzor na panelu
+ReadingBuffer ina1Buffer; 
+//senzor na bateriji
+ReadingBuffer ina2Buffer;
+//senzor na izlazu
+ReadingBuffer ina3Buffer; 
+
+enum STATES
+{
+    SPOLJNO_NAPAJANJE = 0, //spoljasnje napajanje
+    PANEL_NAPAJANJE, //akku je pun
+    BATERIJA_NAPAJANJE
+};
+
+enum SIGNAL
+{
+    LOW = 0,
+    HIGH
+};
 bool updateSystemState(int* ocs, struct mosquitto* mosq);
+void initBuffer(ReadingBuffer* buffer);
+void addToBuffer(ReadingBuffer* buffer, DATAPACK* datapack);
 
 const char *ssdp_alive_msg =
     "NOTIFY * HTTP/1.1\r\n"

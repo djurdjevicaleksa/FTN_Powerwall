@@ -11,18 +11,15 @@
 #include "usluzniUredjaj.h"
 #include "kontrolerUredjaj.h"
 #include "topics.h"
-#include "lecaina219.h"
-
-#define READING_BUFFER_SIZE 3 * 60
 
 void on_connect(struct mosquitto* mosq, void* obj, int rc)
 {
     printf("Connected.\n");
 }
 
-void on_disconnect(struct mosquitto* mosq)
+void on_disconnect(struct mosquitto* mosq, void* obj, int rc)
 {
-    printf("Disconnected.\n");
+    printf("Disconnected!\n");
 }
 
 void on_publish(struct mosquitto* mosq, void* obj, int mid)
@@ -40,7 +37,7 @@ void on_message(struct mosquitto* mosq, void* obj, const struct mosquitto_messag
     //obradi ako poruka pocinje sa GET ili SET za onu app iz praktikuma
     //aka proveri da li su prva 3 karaktera GET ili SET (tako definisano u praktikumu)
 
-    const char* topic = (const char*)msg->topic;
+    char* topic = (char*)msg->topic;
     
     if(strncmp(topic, DATA_TOPIC, 5) == 0)
     {
@@ -68,11 +65,11 @@ void on_message(struct mosquitto* mosq, void* obj, const struct mosquitto_messag
             fprintf(stderr, "Received undefined device signature: %s", inaName);
         }
     }
-    else if(strncpy(topic, GETS_TOPIC, 5) == 0)
+    else if(strncmp(topic, GETS_TOPIC, 5) == 0)
     {
         //gets komanda
     }
-    else if(strncpy(topic, SETS_TOPIC, 5) == 0)
+    else if(strncmp(topic, SETS_TOPIC, 5) == 0)
     {
 
     }
@@ -81,48 +78,6 @@ void on_message(struct mosquitto* mosq, void* obj, const struct mosquitto_messag
         //bad request
     }
 }
-
-typedef struct
-{
-    DATAPACK data[READING_BUFFER_SIZE]; //na svaki minut meri
-    int pointer; //pokazuje na 1. prazno mesto
-
-}ReadingBuffer;
-
-//senzor na panelu
-ReadingBuffer ina1Buffer; 
-//senzor na bateriji
-ReadingBuffer ina2Buffer;
-//senzor na izlazu
-ReadingBuffer ina3Buffer; 
-
-void initBuffer(ReadingBuffer* buffer)
-{
-    buffer->pointer = 0;
-    memset(&buffer, 0, sizeof(buffer));
-}
-
-void addToBuffer(ReadingBuffer* buffer, DATAPACK* datapack)
-{
-    buffer->data[buffer->pointer] = *datapack;
-    buffer->pointer++;
-
-    if(buffer->pointer == READING_BUFFER_SIZE - 1)
-        buffer->pointer = 0;
-}
-
-enum STATES
-{
-    SPOLJNO_NAPAJANJE = 0, //spoljasnje napajanje
-    PANEL_NAPAJANJE, //akku je pun
-    BATERIJA_NAPAJANJE
-};
-
-enum SIGNAL
-{
-    LOW = 0,
-    HIGH
-};
 
 /*
     SPOLJNO NAPAJANJE:
@@ -327,23 +282,58 @@ void setupSockets(struct sockaddr_in* server_addr, struct sockaddr_in* client_ad
     }
 }
 
+void initBuffer(ReadingBuffer* buffer)
+{
+    buffer->pointer = 0;
+    memset(&buffer, 0, sizeof(buffer));
+}
+
+void addToBuffer(ReadingBuffer* buffer, DATAPACK* datapack)
+{
+    buffer->data[buffer->pointer] = *datapack;
+    buffer->pointer++;
+
+    if(buffer->pointer == READING_BUFFER_SIZE - 1)
+        buffer->pointer = 0;
+}
+
 bool updateSystemState(int* ocs, struct mosquitto* mosq)
 {
-    bf command;
+    typedef struct
+    {
+        unsigned b0: 1;
+        unsigned b1: 1;
+        unsigned b2: 1;
+        unsigned b3: 1;
+        unsigned b4: 1;
+        unsigned b5: 1;
 
-    command.a = ocs[0];
-    command.b = ocs[1];
-    command.c = ocs[2];
-    command.d = ocs[3];
-    command.e = ocs[4];
-    command.f = ocs[5];
+        unsigned b6: 1;
+        unsigned b7: 1;
+    }bf;
 
-    command.g = ocs[6];
-    command.h = ocs[7];
+    typedef union
+    {
+        bf bitField;
+        unsigned char entireByte;
+    
+    }bf_mask;
 
-    char formatted_command = *(char*)((void*)&command);
+    bf_mask command;
 
-    if(mosquitto_publish(mosq, NULL, COMM_TOPIC, sizeof(char), (void*)&formatted_command, 1, false) != MOSQ_ERR_SUCCESS)
+    command.bitField.b0 = ocs[0];
+    command.bitField.b1 = ocs[1];
+    command.bitField.b2 = ocs[2];
+    command.bitField.b3 = ocs[3];
+    command.bitField.b4 = ocs[4];
+    command.bitField.b5 = ocs[5];
+
+    command.bitField.b6 = 0;
+    command.bitField.b7 = 0;
+
+    char formatted_command = command.entireByte;
+
+    if(mosquitto_publish(mosq, NULL, COMM_TOPIC, sizeof(formatted_command), &formatted_command, 1, false) != MOSQ_ERR_SUCCESS)
     {
         fprintf(stderr, "Can't instruct the actuator to change its state.\n");
         return false;
