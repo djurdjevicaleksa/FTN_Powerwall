@@ -1,0 +1,34 @@
+{
+    "device": 
+    {
+        "name": "Aktuatori",
+        "type": "Raspberry Pi",
+        "model": "2 B",
+        "relays": 
+        [
+            {
+                "name": "OC1",
+                "type": "relay",
+                "model": "Weidmüller RSO30"
+            },
+
+            {
+                "name": "OC2",
+                "type": "relay",
+                "model": "Weidmüller RSO30"
+            },
+
+            {
+                "name": "OC3",
+                "type": "relay",
+                "model": "Weidmüller RSO30"
+            },
+
+            {
+                "name": "OC4",
+                "type": "relay",
+                "model": "Weidmüller RSO30"
+            }
+        ]
+    }
+}

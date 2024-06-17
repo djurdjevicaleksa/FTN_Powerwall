@@ -1,0 +1,1 @@
+gcc -Wall centralniUredjaj.c -o centralni -lmosquitto -pthread

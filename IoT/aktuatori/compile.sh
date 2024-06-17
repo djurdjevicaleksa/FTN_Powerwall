@@ -1,0 +1,1 @@
+gcc -Wall aktuatorUredjaj.c -o aktuator -lmosquitto -pthread -lwiringPi

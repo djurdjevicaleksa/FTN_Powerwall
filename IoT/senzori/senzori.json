@@ -1,0 +1,40 @@
+{
+    "device": 
+    {
+        "name": "Senzori",
+        "type": "Raspberry Pi",
+        "model": "2 B",
+        "sensors": 
+        [
+            {
+                "name": "INA1",
+                "type": "Hall effect, shunt voltage sensor",
+                "model": "INA219",
+                "units": "A / mA,  V / mV,  W / mW",
+                "rangeV": "0~26 VDC",
+                "rangeA": "0~2 A",
+                "rangeW": "0~52 W"
+            },
+
+            {
+                "name": "INA2",
+                "type": "Hall effect, shunt voltage sensor",
+                "model": "INA219",
+                "units": "A / mA,  V / mV,  W / mW",
+                "rangeV": "0~26 VDC",
+                "rangeA": "0~2 A",
+                "rangeW": "0~52 W"
+            },
+
+            {
+                "name": "INA3",
+                "type": "Hall effect, shunt voltage sensor",
+                "model": "INA219",
+                "units": "A / mA,  V / mV,  W / mW",
+                "rangeV": "0~26 VDC",
+                "rangeA": "0~2 A",
+                "rangeW": "0~52 W"
+            }
+        ]
+    }
+}

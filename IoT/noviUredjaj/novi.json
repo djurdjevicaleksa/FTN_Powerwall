@@ -1,0 +1,18 @@
+{
+    "device": 
+    {
+        "name": "Senzori2",
+        "type": "Laptop",
+        "model": "Lenovo ThinkBook 15 G2 ARE",
+        "sensors": 
+        [
+            {
+                "name": "IQ Sensor",
+                "type": "For smart ppl.",
+                "model": "TOPG",
+                "units": "scalar",
+                "rangeV": "0 - 240"
+            }
+        ]
+    }
+}

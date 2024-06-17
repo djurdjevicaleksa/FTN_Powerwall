@@ -1,0 +1,1 @@
+gcc -Wall  mqtt_app.c -o app -I./../ -lmosquitto -pthread
